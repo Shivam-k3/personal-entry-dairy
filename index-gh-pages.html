@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personal Daily Journal - Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #f3f4f6 !important; }
+    #log {
+      max-height: 300px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #2563eb #f3f4f6;
+    }
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+    #log::-webkit-scrollbar-thumb {
+      background: #2563eb;
+      border-radius: 4px;
+    }
+    #log::-webkit-scrollbar-track {
+      background: #f3f4f6;
+    }
+    textarea:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+    #submit[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #moodChart {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow">
+    <h1 class="text-2xl font-bold mb-4 text-blue-700">Personal Daily Journal - Demo</h1>
+    <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
+      <p class="text-yellow-800 text-sm">
+        <strong>Demo Version:</strong> This is a frontend-only demo. For full features with AI sentiment analysis, 
+        download and run the complete version locally.
+      </p>
+    </div>
+    <textarea id="entry" rows="4" class="w-full p-2 border rounded mb-2" placeholder="How was your day?"></textarea>
+    <button id="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Add Entry</button>
+    <div id="loading" class="text-blue-600 mt-2 hidden">Analyzing...</div>
+    <h2 class="text-xl font-semibold mt-8 mb-2">Last 7 Entries</h2>
+    <ul id="log" class="mb-8"></ul>
+    <h2 class="text-xl font-semibold mb-2">Mood Trend</h2>
+    <canvas id="moodChart" height="120"></canvas>
+  </div>
+
+  <script>
+    const entryInput = document.getElementById('entry');
+    const submitBtn = document.getElementById('submit');
+    const logList = document.getElementById('log');
+    const loading = document.getElementById('loading');
+    const moodChartCanvas = document.getElementById('moodChart');
+    let chartInstance = null;
+    let entries = [];
+
+    // Simple client-side sentiment analysis
+    function analyzeSentiment(text) {
+      const positiveWords = [
+        'happy', 'joy', 'excited', 'great', 'wonderful', 'amazing', 'love', 'good', 'nice', 
+        'beautiful', 'fantastic', 'excellent', 'perfect', 'awesome', 'brilliant', 'delighted',
+        'pleased', 'satisfied', 'content', 'grateful', 'blessed', 'fortunate', 'lucky'
+      ];
+      const negativeWords = [
+        'sad', 'angry', 'frustrated', 'terrible', 'awful', 'hate', 'bad', 'horrible', 
+        'worried', 'anxious', 'depressed', 'miserable', 'upset', 'disappointed', 'fear',
+        'scared', 'terrified', 'devastated', 'heartbroken', 'lonely', 'hopeless'
+      ];
+      const crisisWords = [
+        'suicide', 'kill myself', 'end my life', 'want to die', 'better off dead',
+        'no reason to live', 'give up', 'can\'t take it anymore', 'hopeless',
+        'worthless', 'burden', 'everyone would be better off', 'no point'
+      ];
+      
+      const words = text.toLowerCase().split(/\s+/);
+      let positiveCount = 0;
+      let negativeCount = 0;
+      let crisisCount = 0;
+      
+      words.forEach(word => {
+        if (positiveWords.includes(word)) positiveCount++;
+        if (negativeWords.includes(word)) negativeCount++;
+        if (crisisWords.includes(word)) crisisCount++;
+      });
+      
+      if (crisisCount > 0) return 'Crisis';
+      if (positiveCount > negativeCount) return 'Positive';
+      if (negativeCount > positiveCount) return 'Negative';
+      return 'Neutral';
+    }
+
+    // Get suggestions based on mood
+    function getSuggestion(mood) {
+      const suggestions = {
+        'Crisis': [
+          "You are not alone. Please call 988 (Suicide & Crisis Lifeline) right now - they're available 24/7 and want to help.",
+          "These feelings are temporary, even if they don't feel that way. Please reach out to a crisis counselor at 988.",
+          "You matter and your life has value. Please talk to someone you trust or call 988 for immediate support."
+        ],
+        'Positive': [
+          "Keep up the great energy! Your positive mindset is contagious.",
+          "Celebrate your wins today! You're doing amazing.",
+          "Share your joy with others - happiness multiplies when shared.",
+          "Take a moment to appreciate how far you've come."
+        ],
+        'Negative': [
+          "It's okay to feel this way. Tomorrow is a new day.",
+          "Consider talking to a friend or family member about your feelings.",
+          "Try taking a walk or doing something you usually enjoy.",
+          "Remember that difficult times are temporary. You're stronger than you think."
+        ],
+        'Neutral': [
+          "Take a moment to reflect on what could make your day even better.",
+          "Consider trying something new or reaching out to someone you haven't talked to in a while.",
+          "Sometimes neutral days are perfect for planning and setting new goals.",
+          "Use this calm energy to organize your thoughts and priorities."
+        ]
+      };
+      
+      const moodSuggestions = suggestions[mood] || ["Reflect on your day and see what insights you can gain."];
+      return moodSuggestions[Math.floor(Math.random() * moodSuggestions.length)];
+    }
+
+    // Save entries to localStorage
+    function saveEntries() {
+      localStorage.setItem('journalEntries', JSON.stringify(entries));
+    }
+
+    // Load entries from localStorage
+    function loadEntries() {
+      const saved = localStorage.getItem('journalEntries');
+      if (saved) {
+        entries = JSON.parse(saved);
+        displayEntries();
+        updateChart();
+      }
+    }
+
+    // Display entries
+    function displayEntries() {
+      logList.innerHTML = '';
+      const recentEntries = entries.slice(-7);
+      
+      if (recentEntries.length === 0) {
+        logList.innerHTML = '<li class="text-gray-500">No entries yet. Start by adding your first journal entry!</li>';
+        return;
+      }
+      
+      recentEntries.forEach(entry => {
+        const li = document.createElement('li');
+        if (entry.mood === 'Crisis') {
+          li.className = "mb-4 p-3 bg-red-50 rounded border border-red-300";
+          li.innerHTML = `
+            <div><b>${entry.date}</b>: ${entry.entry}</div>
+            <div class="text-red-700 font-bold">⚠️ Crisis - ${entry.mood}</div>
+            <div class="text-red-600 font-semibold">${entry.suggestion}</div>
+          `;
+        } else {
+          li.className = "mb-4 p-3 bg-gray-50 rounded border";
+          li.innerHTML = `
+            <div><b>${entry.date}</b>: ${entry.entry}</div>
+            <div>Mood: <b>${entry.mood}</b></div>
+            <div>Suggestion: ${entry.suggestion}</div>
+          `;
+        }
+        logList.appendChild(li);
+      });
+    }
+
+    // Update chart
+    function updateChart() {
+      if (!window.Chart) return;
+      
+      const recentEntries = entries.slice(-7);
+      const labels = recentEntries.map(e => e.date);
+      const values = recentEntries.map(e => {
+        if (e.mood === "Positive") return 1;
+        if (e.mood === "Negative") return -1;
+        if (e.mood === "Crisis") return -2;
+        return 0;
+      });
+      
+      if (chartInstance) chartInstance.destroy();
+      
+      chartInstance = new Chart(moodChartCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Mood',
+            data: values,
+            borderColor: '#2563eb',
+            backgroundColor: '#93c5fd',
+            tension: 0.2,
+            fill: false,
+            pointBackgroundColor: function(context) {
+              const value = context.parsed.y;
+              if (value === -2) return '#dc2626';
+              if (value === 1) return '#059669';
+              if (value === -1) return '#dc2626';
+              return '#6b7280';
+            },
+            pointBorderColor: function(context) {
+              const value = context.parsed.y;
+              if (value === -2) return '#dc2626';
+              if (value === 1) return '#059669';
+              if (value === -1) return '#dc2626';
+              return '#6b7280';
+            }
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: -2,
+              max: 1,
+              ticks: {
+                stepSize: 1,
+                callback: v => {
+                  if (v === 1) return "Positive";
+                  if (v === 0) return "Neutral";
+                  if (v === -1) return "Negative";
+                  if (v === -2) return "Crisis";
+                  return "";
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    // Add entry
+    submitBtn.onclick = () => {
+      const entry = entryInput.value.trim();
+      if (!entry) return;
+      
+      loading.classList.remove('hidden');
+      submitBtn.disabled = true;
+      
+      // Simulate processing time
+      setTimeout(() => {
+        const mood = analyzeSentiment(entry);
+        const suggestion = getSuggestion(mood);
+        
+        const newEntry = {
+          id: Date.now(),
+          date: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString(),
+          entry: entry,
+          mood: mood,
+          suggestion: suggestion
+        };
+        
+        entries.push(newEntry);
+        saveEntries();
+        displayEntries();
+        updateChart();
+        
+        entryInput.value = '';
+        loading.classList.add('hidden');
+        submitBtn.disabled = false;
+      }, 500);
+    };
+
+    // Load Chart.js and initialize
+    const chartScript = document.createElement('script');
+    chartScript.src = "https://cdn.jsdelivr.net/npm/chart.js";
+    chartScript.onload = () => {
+      loadEntries();
+    };
+    document.body.appendChild(chartScript);
+  </script>
+</body>
+</html> 

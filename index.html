@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Daily Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+        body { background: #f3f4f6 !important; }
+        /* Custom scrollbar for log list */
+        #log {
+            max-height: 300px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #2563eb #f3f4f6;
+        }
+        #log::-webkit-scrollbar {
+            width: 8px;
+        }
+        #log::-webkit-scrollbar-thumb {
+            background: #2563eb;
+            border-radius: 4px;
+        }
+        #log::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+        /* Focus style for textarea */
+        textarea:focus {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+        /* Button loading state */
+        #submit[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        /* Chart container spacing */
+        #moodChart {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">📖 Personal Daily Journal</h1>
+            <p class="text-gray-600">Track your mood and reflect on your day</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column - Entry Form -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">✍️ New Entry</h2>
+                
+                <div class="mb-4">
+                    <label for="journalEntry" class="block text-sm font-medium text-gray-700 mb-2">
+                        How was your day?
+                    </label>
+                    <textarea 
+                        id="journalEntry" 
+                        rows="6" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        placeholder="Write about your day, feelings, thoughts, or anything on your mind..."
+                    ></textarea>
+                </div>
+
+                <button 
+                    id="submitBtn" 
+                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
+                >
+                    📝 Add Entry
+                </button>
+
+                <div id="loading" class="hidden mt-4 text-center">
+                    <div class="inline-flex items-center text-blue-600">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Analyzing your entry...
+                    </div>
+                </div>
+
+                <!-- Recent Entry Display -->
+                <div id="recentEntry" class="hidden mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-semibold text-gray-800 mb-2">📊 Analysis</h3>
+                    <div id="entryAnalysis"></div>
+                </div>
+            </div>
+
+            <!-- Right Column - Entries List -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">📚 Recent Entries</h2>
+                
+                <div id="entriesList" class="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">📝</div>
+                        <p>No entries yet. Write your first journal entry!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mood Chart -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">📈 Mood Trend</h2>
+            <div class="h-64">
+                <canvas id="moodChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let entries = [];
+        let chart = null;
+
+        // DOM elements
+        const journalEntry = document.getElementById('journalEntry');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const recentEntry = document.getElementById('recentEntry');
+        const entryAnalysis = document.getElementById('entryAnalysis');
+        const entriesList = document.getElementById('entriesList');
+        const moodChart = document.getElementById('moodChart');
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEntries();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            submitBtn.addEventListener('click', addEntry);
+            journalEntry.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    addEntry();
+                }
+            });
+        }
+
+        async function addEntry() {
+            const entry = journalEntry.value.trim();
+            if (!entry) {
+                alert('Please write something in your journal entry!');
+                return;
+            }
+
+            // Show loading
+            submitBtn.disabled = true;
+            loading.classList.remove('hidden');
+            recentEntry.classList.add('hidden');
+
+            try {
+                const response = await fetch('http://localhost:5000/api/journal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entry })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success) {
+                    await loadEntries();
+                    showRecentEntry(result.entry);
+                } else {
+                    throw new Error(result.error || 'Failed to add entry');
+                }
+            } catch (error) {
+                console.error('Error adding entry:', error);
+                alert('There was an error adding your entry. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.add('hidden');
+            }
+        }
+
+        function showRecentEntry(entry) {
+            const moodColors = {
+                'Positive': 'text-green-600',
+                'Negative': 'text-red-600',
+                'Neutral': 'text-gray-600'
+            };
+
+            entryAnalysis.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Date:</span>
+                        <span class="font-medium">${entry.date} at ${entry.time}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Mood:</span>
+                        <span class="font-medium ${moodColors[entry.mood]}">${entry.mood}</span>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <span class="text-sm font-medium text-blue-800">💡 Suggestion:</span>
+                        <p class="text-sm text-blue-700 mt-1">${entry.suggestion}</p>
+                    </div>
+                </div>
+            `;
+            recentEntry.classList.remove('hidden');
+        }
+
+        function displayEntries() {
+            if (entries.length === 0) {
+                entriesList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">📝</div>
+                        <p>No entries yet. Write your first journal entry!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            entriesList.innerHTML = entries.map(entry => {
+                const moodColors = {
+                    'Positive': 'bg-green-100 text-green-800',
+                    'Negative': 'bg-red-100 text-red-800',
+                    'Neutral': 'bg-gray-100 text-gray-800'
+                };
+
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="text-sm text-gray-500">${entry.date} at ${entry.time}</div>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${moodColors[entry.mood]}">
+                                ${entry.mood}
+                            </span>
+                        </div>
+                        <p class="text-gray-800 mb-3">${entry.entry}</p>
+                        <div class="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                            <span class="font-medium">💡</span> ${entry.suggestion}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function moodToNum(m) {
+            if (m === "Positive") return 1;
+            if (m === "Negative") return -1;
+            if (m === "Crisis") return -2; // Special value for crisis
+            return 0;
+        }
+
+        function drawChart(data) {
+            if (!window.Chart) return;
+            
+            const labels = data.map(e => e.date);
+            const values = data.map(e => moodToNum(e.mood));
+            
+            if (chart) chart.destroy();
+            
+            chart = new Chart(moodChart, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Mood',
+                        data: values,
+                        borderColor: '#2563eb',
+                        backgroundColor: '#93c5fd',
+                        tension: 0.2,
+                        fill: false,
+                        pointBackgroundColor: function(context) {
+                            const value = context.parsed.y;
+                            if (value === -2) return '#dc2626'; // Red for crisis
+                            if (value === 1) return '#059669'; // Green for positive
+                            if (value === -1) return '#dc2626'; // Red for negative
+                            return '#6b7280'; // Gray for neutral
+                        },
+                        pointBorderColor: function(context) {
+                            const value = context.parsed.y;
+                            if (value === -2) return '#dc2626'; // Red for crisis
+                            if (value === 1) return '#059669'; // Green for positive
+                            if (value === -1) return '#dc2626'; // Red for negative
+                            return '#6b7280'; // Gray for neutral
+                        }
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: -2,
+                            max: 1,
+                            ticks: {
+                                stepSize: 1,
+                                callback: v => {
+                                    if (v === 1) return "Positive";
+                                    if (v === 0) return "Neutral";
+                                    if (v === -1) return "Negative";
+                                    if (v === -2) return "Crisis";
+                                    return "";
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadEntries() {
+            fetch('http://localhost:5000/api/journal')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.entries && data.entries.length > 0) {
+                        data.entries.forEach(e => {
+                            const li = document.createElement('li');
+                            // Special styling for crisis entries
+                            if (e.mood === 'Crisis') {
+                                li.className = "mb-4 p-3 bg-red-50 rounded border border-red-300";
+                                li.innerHTML = `
+                                    <div><b>${e.date}</b>: ${e.entry}</div>
+                                    <div class="text-red-700 font-bold">⚠️ Crisis - ${e.mood}</div>
+                                    <div class="text-red-600 font-semibold">${e.suggestion}</div>
+                                `;
+                            } else {
+                                li.className = "mb-4 p-3 bg-gray-50 rounded border";
+                                li.innerHTML = `
+                                    <div><b>${e.date}</b>: ${e.entry}</div>
+                                    <div>Mood: <b>${e.mood}</b></div>
+                                    <div>Suggestion: ${e.suggestion}</div>
+                                `;
+                            }
+                            entriesList.appendChild(li);
+                        });
+                        drawChart(data.entries);
+                    } else {
+                        entriesList.innerHTML = '<li class="text-gray-500">No entries yet. Start by adding your first journal entry!</li>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading entries:', error);
+                    alert('Could not load entries. Please check if the backend server is running.');
+                });
+        }
+    </script>
+</body>
+</html> 
