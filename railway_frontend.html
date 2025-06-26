@@ -131,7 +131,7 @@
                         // Reload data
                         loadEntries();
                         loadStats();
-                        updateSuggestions(result.sentiment, result.suggestions);
+                        updateSuggestions(result.entry.mood, result.entry.suggestion);
                     } else {
                         throw new Error('Failed to save entry');
                     }
@@ -146,7 +146,8 @@
         async function loadEntries() {
             try {
                 const response = await fetch(`${API_BASE}/journal?limit=5`);
-                const entries = await response.json();
+                const data = await response.json();
+                const entries = data.entries || [];
                 
                 const entriesList = document.getElementById('entriesList');
                 entriesList.innerHTML = '';
@@ -160,18 +161,21 @@
                     const entryDiv = document.createElement('div');
                     entryDiv.className = 'bg-white/10 rounded-lg p-4 border-l-4';
                     
-                    // Set border color based on sentiment
-                    if (entry.sentiment === 'positive') entryDiv.classList.add('border-green-400');
-                    else if (entry.sentiment === 'negative') entryDiv.classList.add('border-red-400');
+                    // Set border color based on mood
+                    if (entry.mood === 'Positive') entryDiv.classList.add('border-green-400');
+                    else if (entry.mood === 'Negative') entryDiv.classList.add('border-red-400');
+                    else if (entry.mood === 'Crisis') entryDiv.classList.add('border-red-600');
                     else entryDiv.classList.add('border-yellow-400');
 
+                    const timestamp = `${entry.date} ${entry.time}`;
+                    
                     entryDiv.innerHTML = `
                         <div class="flex justify-between items-start mb-2">
-                            <span class="text-white/80 text-sm">${new Date(entry.timestamp).toLocaleString()}</span>
-                            <span class="text-xs px-2 py-1 rounded-full ${getMoodClass(entry.sentiment)}">${entry.sentiment}</span>
+                            <span class="text-white/80 text-sm">${timestamp}</span>
+                            <span class="text-xs px-2 py-1 rounded-full ${getMoodClass(entry.mood)}">${entry.mood}</span>
                         </div>
                         <p class="text-white mb-2">${entry.entry}</p>
-                        ${entry.suggestions ? `<p class="text-white/70 text-sm">💡 ${entry.suggestions}</p>` : ''}
+                        ${entry.suggestion ? `<p class="text-white/70 text-sm">💡 ${entry.suggestion}</p>` : ''}
                     `;
                     
                     entriesList.appendChild(entryDiv);
@@ -185,26 +189,27 @@
         async function loadStats() {
             try {
                 const response = await fetch(`${API_BASE}/stats`);
-                const stats = await response.json();
+                const data = await response.json();
+                const stats = data.stats || {};
                 
                 const moodStats = document.getElementById('moodStats');
                 moodStats.innerHTML = `
                     <div class="flex justify-between text-white">
                         <span>Total Entries:</span>
-                        <span class="font-semibold">${stats.total_entries}</span>
+                        <span class="font-semibold">${stats.total_entries || 0}</span>
                     </div>
                     <div class="flex justify-between text-white">
-                        <span>Average Sentiment:</span>
-                        <span class="font-semibold">${stats.average_sentiment}</span>
+                        <span>Average Mood:</span>
+                        <span class="font-semibold">${stats.average_mood || 'No data'}</span>
                     </div>
                     <div class="flex justify-between text-white">
                         <span>Most Common Mood:</span>
-                        <span class="font-semibold">${stats.most_common_mood}</span>
+                        <span class="font-semibold">${getMostCommonMood(stats.mood_distribution || {})}</span>
                     </div>
                 `;
 
                 // Update chart
-                updateMoodChart(stats.mood_distribution);
+                updateMoodChart(stats.mood_distribution || {});
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
@@ -218,17 +223,32 @@
                 moodChart.destroy();
             }
 
+            const labels = Object.keys(moodData);
+            const values = Object.values(moodData);
+
+            if (labels.length === 0) {
+                // Show empty chart message
+                const canvas = document.getElementById('moodChart');
+                const context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                context.font = '14px Arial';
+                context.textAlign = 'center';
+                context.fillText('No data yet', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
             moodChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: Object.keys(moodData),
+                    labels: labels,
                     datasets: [{
-                        data: Object.values(moodData),
+                        data: values,
                         backgroundColor: [
-                            '#4ade80', // positive
-                            '#fbbf24', // neutral
-                            '#f87171', // negative
-                            '#dc2626'  // crisis
+                            '#4ade80', // Positive
+                            '#fbbf24', // Neutral
+                            '#f87171', // Negative
+                            '#dc2626'  // Crisis
                         ]
                     }]
                 },
@@ -246,24 +266,33 @@
         }
 
         // Update suggestions
-        function updateSuggestions(sentiment, suggestions) {
+        function updateSuggestions(mood, suggestion) {
             const suggestionsDiv = document.getElementById('suggestions');
             suggestionsDiv.innerHTML = `
                 <div class="space-y-2">
-                    <p class="font-semibold">Based on your mood (${sentiment}):</p>
-                    <p>${suggestions}</p>
+                    <p class="font-semibold">Based on your mood (${mood}):</p>
+                    <p>${suggestion}</p>
                 </div>
             `;
         }
 
         // Helper functions
-        function getMoodClass(sentiment) {
-            switch(sentiment) {
-                case 'positive': return 'bg-green-500/20 text-green-300';
-                case 'negative': return 'bg-red-500/20 text-red-300';
-                case 'crisis': return 'bg-red-600/20 text-red-200';
+        function getMoodClass(mood) {
+            switch(mood) {
+                case 'Positive': return 'bg-green-500/20 text-green-300';
+                case 'Negative': return 'bg-red-500/20 text-red-300';
+                case 'Crisis': return 'bg-red-600/20 text-red-200';
                 default: return 'bg-yellow-500/20 text-yellow-300';
             }
+        }
+
+        function getMostCommonMood(moodDistribution) {
+            if (Object.keys(moodDistribution).length === 0) {
+                return 'No data';
+            }
+            return Object.keys(moodDistribution).reduce((a, b) => 
+                moodDistribution[a] > moodDistribution[b] ? a : b
+            );
         }
 
         function showNotification(message, type) {
