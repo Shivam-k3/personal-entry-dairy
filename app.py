@@ -238,12 +238,17 @@ def serve_index():
 
 @app.route('/')
 def home():
-    """Serve the main page"""
+    """Serve the main journal interface"""
+    return send_from_directory('.', 'railway_frontend.html')
+
+@app.route('/api-docs')
+def api_docs():
+    """Serve the API documentation page"""
     return '''
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Journal API</title>
+        <title>Journal API Documentation</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 40px; }
             .endpoint { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
@@ -278,7 +283,7 @@ def home():
             <p>Get journal statistics</p>
         </div>
         
-        <p><a href="/index.html">Open Journal App</a></p>
+        <p><a href="/">← Back to Journal App</a></p>
     </body>
     </html>
     '''
