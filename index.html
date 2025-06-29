@@ -7,6 +7,31 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        body {
+            background: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+        .bg-glass {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(6px);
+        }
+        .mood-btn {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .mood-btn:active {
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px #f9d42344;
+        }
+        .vibrant-happy { background: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%); color: #fff; }
+        .vibrant-smile { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); color: #fff; }
+        .vibrant-neutral { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); color: #fff; }
+        .vibrant-sad { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); color: #fff; }
+        .vibrant-angry { background: linear-gradient(135deg, #ff512f 0%, #dd2476 100%); color: #fff; }
+        .vibrant-card { box-shadow: 0 4px 24px 0 #ff4e5044, 0 1.5px 6px 0 #f9d42333; }
+        .vibrant-header { color: #ff4e50; text-shadow: 0 2px 8px #f9d42344; }
+        .vibrant-btn { background: linear-gradient(90deg, #ff4e50 0%, #f9d423 100%); color: #fff; border: none; }
+        .vibrant-btn:hover { background: linear-gradient(90deg, #f9d423 0%, #ff4e50 100%); }
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
@@ -20,7 +45,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #2563eb;
         }
-        body { background: #f3f4f6 !important; }
         /* Custom scrollbar for log list */
         #log {
             max-height: 300px;
@@ -54,76 +78,170 @@
             border-radius: 8px;
             padding: 8px;
         }
+        /* Auth form styles */
+        .auth-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .auth-btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .auth-btn-primary:hover {
+            background: #2563eb;
+        }
+        .auth-btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        .auth-btn-secondary:hover {
+            background: #4b5563;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+<body class="min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">📖 Personal Daily Journal</h1>
-            <p class="text-gray-600">Track your mood and reflect on your day</p>
+            <h1 class="text-4xl font-bold vibrant-header mb-2">📖 Personal Daily Journal</h1>
+            <p class="text-lg text-gray-700 font-semibold">Track your mood and reflect on your day with positivity!</p>
         </div>
-
-        <!-- Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Column - Entry Form -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">✍️ New Entry</h2>
-                
-                <div class="mb-4">
-                    <label for="journalEntry" class="block text-sm font-medium text-gray-700 mb-2">
-                        How was your day?
-                    </label>
-                    <textarea 
-                        id="journalEntry" 
-                        rows="6" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        placeholder="Write about your day, feelings, thoughts, or anything on your mind..."
-                    ></textarea>
+        <!-- Auth Section -->
+        <div id="authSection" class="max-w-md mx-auto mt-8 bg-glass rounded-2xl vibrant-card shadow-lg p-8 mb-8">
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2 class="text-2xl font-bold text-center mb-4">🔐 Login</h2>
+                <form id="loginFormElement" class="auth-form space-y-4">
+                    <input id="loginUsername" type="text" class="form-input" placeholder="Username" required>
+                    <input id="loginPassword" type="password" class="form-input" placeholder="Password" required>
+                    <div id="loginError" class="hidden text-red-600 text-sm"></div>
+                    <button type="submit" class="auth-btn auth-btn-primary">Login</button>
+                </form>
+                <div class="flex justify-between mt-4">
+                    <button id="showRegisterBtn" class="text-blue-600 hover:underline">Create account</button>
+                    <button id="showForgotPasswordBtn" class="text-blue-600 hover:underline">Forgot password?</button>
                 </div>
-
-                <button 
-                    id="submitBtn" 
-                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
-                >
-                    📝 Add Entry
-                </button>
-
-                <div id="loading" class="hidden mt-4 text-center">
-                    <div class="inline-flex items-center text-blue-600">
-                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Analyzing your entry...
-                    </div>
-                </div>
-
-                <!-- Recent Entry Display -->
-                <div id="recentEntry" class="hidden mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 class="font-semibold text-gray-800 mb-2">📊 Analysis</h3>
-                    <div id="entryAnalysis"></div>
+                <div id="verificationMessage" class="hidden text-yellow-700 text-sm mt-4"></div>
+            </div>
+            <!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <h2 class="text-2xl font-bold text-center mb-4">📝 Register</h2>
+                <form id="registerFormElement" class="auth-form space-y-4">
+                    <input id="registerUsername" type="text" class="form-input" placeholder="Username" required>
+                    <input id="registerEmail" type="email" class="form-input" placeholder="Email" required>
+                    <input id="registerPassword" type="password" class="form-input" placeholder="Password" required minlength="6">
+                    <input id="confirmPassword" type="password" class="form-input" placeholder="Confirm Password" required minlength="6">
+                    <button type="submit" class="auth-btn auth-btn-primary">Register</button>
+                </form>
+                <div class="flex justify-between mt-4">
+                    <button id="showLoginBtn" class="text-blue-600 hover:underline">Back to Login</button>
                 </div>
             </div>
-
-            <!-- Right Column - Entries List -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">📚 Recent Entries</h2>
-                
-                <div id="entriesList" class="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
-                    <div class="text-center text-gray-500 py-8">
-                        <div class="text-4xl mb-2">📝</div>
-                        <p>No entries yet. Write your first journal entry!</p>
-                    </div>
+            <!-- Forgot Password Form -->
+            <div id="forgotPasswordForm" class="hidden">
+                <h2 class="text-2xl font-bold text-center mb-4">🔑 Forgot Password</h2>
+                <form id="forgotPasswordFormElement" class="auth-form space-y-4">
+                    <input id="forgotPasswordEmail" type="email" class="form-input" placeholder="Enter your email" required>
+                    <div id="forgotPasswordError" class="hidden text-red-600 text-sm"></div>
+                    <div id="forgotPasswordSuccess" class="hidden text-green-600 text-sm"></div>
+                    <button type="submit" class="auth-btn auth-btn-primary">Send Reset Link</button>
+                </form>
+                <div class="flex justify-between mt-4">
+                    <button id="backToLoginBtn" class="text-blue-600 hover:underline">Back to Login</button>
                 </div>
             </div>
         </div>
-
-        <!-- Mood Chart -->
-        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">📈 Mood Trend</h2>
-            <div class="h-64">
-                <canvas id="moodChart"></canvas>
+        <!-- User Bar and Main App Content -->
+        <div id="journalApp" class="hidden">
+            <div class="flex justify-end items-center mb-4">
+                <span class="mr-4 text-gray-700 font-semibold">👤 <span id="userDisplay"></span></span>
+                <button id="logoutBtn" class="auth-btn auth-btn-secondary w-auto px-4 py-2">Logout</button>
+            </div>
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column - Entry Form -->
+                <div class="bg-glass rounded-2xl vibrant-card shadow-lg p-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">✍️ New Entry</h2>
+                    <!-- Mood Picker -->
+                    <div id="moodPicker" class="flex justify-between items-center mb-4">
+                        <button type="button" class="mood-btn text-3xl vibrant-happy" data-mood="happy" title="Happy">😄</button>
+                        <button type="button" class="mood-btn text-3xl vibrant-smile" data-mood="smile" title="Smile">😊</button>
+                        <button type="button" class="mood-btn text-3xl vibrant-neutral" data-mood="neutral" title="Neutral">😐</button>
+                        <button type="button" class="mood-btn text-3xl vibrant-sad" data-mood="sad" title="Sad">😢</button>
+                        <button type="button" class="mood-btn text-3xl vibrant-angry" data-mood="angry" title="Angry">😡</button>
+                    </div>
+                    <div class="mb-4">
+                        <label for="journalEntry" class="block text-sm font-medium text-gray-700 mb-2">
+                            How was your day?
+                        </label>
+                        <textarea 
+                            id="journalEntry" 
+                            rows="6" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent resize-none"
+                            placeholder="Write about your day, feelings, thoughts, or anything on your mind..."
+                        ></textarea>
+                    </div>
+                    <button 
+                        id="submitBtn" 
+                        class="w-full vibrant-btn py-3 px-4 rounded-md hover:scale-105 transition duration-200 font-medium"
+                    >
+                        📝 Add Entry
+                    </button>
+                    <div id="loading" class="hidden mt-4 text-center">
+                        <div class="inline-flex items-center text-yellow-600">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Analyzing your entry...
+                        </div>
+                    </div>
+                    <!-- Recent Entry Display -->
+                    <div id="recentEntry" class="hidden mt-6 p-4 bg-yellow-50 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 mb-2">📊 Analysis</h3>
+                        <div id="entryAnalysis"></div>
+                    </div>
+                </div>
+                <!-- Right Column - Entries List -->
+                <div class="bg-glass rounded-2xl vibrant-card shadow-lg p-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">📚 Recent Entries</h2>
+                    <!-- Mood Card Grid -->
+                    <div id="entriesList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <div class="text-center text-gray-500 py-8 col-span-full">
+                            <div class="text-4xl mb-2">📝</div>
+                            <p>No entries yet. Write your first journal entry!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Mood Chart -->
+            <div class="mt-8 bg-glass rounded-2xl vibrant-card shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">📈 Mood Trend</h2>
+                <div class="h-64">
+                    <canvas id="moodChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -132,8 +250,50 @@
         // Global variables
         let entries = [];
         let chart = null;
+        let currentUser = null;
+
+        // Mood picker logic
+        let selectedMood = 'happy'; // Default mood
+        const moodEmoji = {
+            happy: '😄',
+            smile: '😊',
+            neutral: '😐',
+            sad: '😢',
+            angry: '😡',
+            Positive: '😄',
+            Negative: '😢',
+            Neutral: '😐',
+            Crisis: '😡',
+        };
+        const moodColors = {
+            happy: 'bg-yellow-100',
+            smile: 'bg-green-100',
+            neutral: 'bg-gray-100',
+            sad: 'bg-blue-100',
+            angry: 'bg-red-100',
+            Positive: 'bg-yellow-100',
+            Negative: 'bg-blue-100',
+            Neutral: 'bg-gray-100',
+            Crisis: 'bg-red-200',
+        };
 
         // DOM elements
+        const authSection = document.getElementById('authSection');
+        const journalApp = document.getElementById('journalApp');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+        const loginFormElement = document.getElementById('loginFormElement');
+        const registerFormElement = document.getElementById('registerFormElement');
+        const forgotPasswordFormElement = document.getElementById('forgotPasswordFormElement');
+        const showRegisterBtn = document.getElementById('showRegisterBtn');
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const showForgotPasswordBtn = document.getElementById('showForgotPasswordBtn');
+        const backToLoginBtn = document.getElementById('backToLoginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userDisplay = document.getElementById('userDisplay');
+
+        // Journal elements
         const journalEntry = document.getElementById('journalEntry');
         const submitBtn = document.getElementById('submitBtn');
         const loading = document.getElementById('loading');
@@ -144,17 +304,267 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            loadEntries();
+            checkAuthStatus();
             setupEventListeners();
+            // Mood picker event
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    selectedMood = this.getAttribute('data-mood');
+                    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('ring-4', 'ring-blue-400'));
+                    this.classList.add('ring-4', 'ring-blue-400');
+                });
+            });
+            // Set default mood highlight
+            document.querySelector('.mood-btn[data-mood="happy"]').classList.add('ring-4', 'ring-blue-400');
         });
 
         function setupEventListeners() {
+            // Auth form events
+            loginFormElement.addEventListener('submit', handleLogin);
+            registerFormElement.addEventListener('submit', handleRegister);
+            forgotPasswordFormElement.addEventListener('submit', handleForgotPassword);
+            
+            // Form toggle events
+            showRegisterBtn.addEventListener('click', () => toggleAuthForms('register'));
+            showLoginBtn.addEventListener('click', () => toggleAuthForms('login'));
+            showForgotPasswordBtn.addEventListener('click', () => toggleAuthForms('forgot-password'));
+            backToLoginBtn.addEventListener('click', () => toggleAuthForms('login'));
+            
+            logoutBtn.addEventListener('click', handleLogout);
+
+            // Journal events
             submitBtn.addEventListener('click', addEntry);
             journalEntry.addEventListener('keydown', function(e) {
                 if (e.ctrlKey && e.key === 'Enter') {
                     addEntry();
                 }
             });
+        }
+
+        function toggleAuthForms(form) {
+            // Hide all forms
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            forgotPasswordForm.classList.add('hidden');
+            
+            // Clear error messages
+            hideAllMessages();
+            
+            // Show selected form
+            if (form === 'register') {
+                registerForm.classList.remove('hidden');
+            } else if (form === 'forgot-password') {
+                forgotPasswordForm.classList.remove('hidden');
+            } else {
+                loginForm.classList.remove('hidden');
+            }
+        }
+
+        function hideAllMessages() {
+            document.getElementById('loginError').classList.add('hidden');
+            document.getElementById('verificationMessage').classList.add('hidden');
+            document.getElementById('forgotPasswordError').classList.add('hidden');
+            document.getElementById('forgotPasswordSuccess').classList.add('hidden');
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function showVerificationMessage(message, email) {
+            const messageDiv = document.getElementById('verificationMessage');
+            messageDiv.innerHTML = `
+                ${message}<br>
+                <button onclick="resendVerification('${email}')" class="text-blue-600 hover:text-blue-800 underline mt-2">
+                    Resend verification email
+                </button>
+            `;
+            messageDiv.classList.remove('hidden');
+        }
+
+        function showForgotPasswordError(message) {
+            const errorDiv = document.getElementById('forgotPasswordError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function showForgotPasswordSuccess(message) {
+            const successDiv = document.getElementById('forgotPasswordSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
+        }
+
+        async function resendVerification(email) {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showForgotPasswordSuccess('Verification email has been resent!');
+                } else {
+                    showForgotPasswordError(data.error || 'Failed to resend verification email');
+                }
+            } catch (error) {
+                console.error('Resend verification error:', error);
+                showForgotPasswordError('Failed to resend verification email');
+            }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('forgotPasswordEmail').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showForgotPasswordSuccess(data.message);
+                    document.getElementById('forgotPasswordFormElement').reset();
+                } else {
+                    showForgotPasswordError(data.error || 'Failed to send reset email');
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                showForgotPasswordError('Failed to send reset email. Please try again.');
+            }
+        }
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    currentUser = data.user;
+                    showJournalApp();
+                } else {
+                    showAuthSection();
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                showAuthSection();
+            }
+        }
+
+        function showAuthSection() {
+            authSection.classList.remove('hidden');
+            journalApp.classList.add('hidden');
+        }
+
+        function showJournalApp() {
+            authSection.classList.add('hidden');
+            journalApp.classList.remove('hidden');
+            
+            if (currentUser) {
+                userDisplay.textContent = currentUser.username;
+            }
+            
+            loadEntries();
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Clear previous messages
+            hideAllMessages();
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    showJournalApp();
+                    document.getElementById('loginFormElement').reset();
+                } else {
+                    if (data.needs_verification) {
+                        showVerificationMessage(data.message, data.email);
+                    } else {
+                        showLoginError(data.error || 'Login failed');
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Login failed. Please try again.');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('registerFormElement').reset();
+                    toggleAuthForms('login');
+                } else {
+                    alert(data.error || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Registration failed. Please try again.');
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('http://localhost:5000/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                currentUser = null;
+                entries = [];
+                showAuthSection();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
         }
 
         async function addEntry() {
@@ -173,7 +583,8 @@
                 const response = await fetch('http://localhost:5000/api/journal', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ entry })
+                    credentials: 'include',
+                    body: JSON.stringify({ entry, mood: selectedMood })
                 });
                 
                 if (!response.ok) {
@@ -184,6 +595,7 @@
                 if (result.success) {
                     await loadEntries();
                     showRecentEntry(result.entry);
+                    journalEntry.value = '';
                 } else {
                     throw new Error(result.error || 'Failed to add entry');
                 }
@@ -200,7 +612,8 @@
             const moodColors = {
                 'Positive': 'text-green-600',
                 'Negative': 'text-red-600',
-                'Neutral': 'text-gray-600'
+                'Neutral': 'text-gray-600',
+                'Crisis': 'text-red-800'
             };
 
             entryAnalysis.innerHTML = `
@@ -225,7 +638,7 @@
         function displayEntries() {
             if (entries.length === 0) {
                 entriesList.innerHTML = `
-                    <div class="text-center text-gray-500 py-8">
+                    <div class="text-center text-gray-500 py-8 col-span-full">
                         <div class="text-4xl mb-2">📝</div>
                         <p>No entries yet. Write your first journal entry!</p>
                     </div>
@@ -234,24 +647,16 @@
             }
 
             entriesList.innerHTML = entries.map(entry => {
-                const moodColors = {
-                    'Positive': 'bg-green-100 text-green-800',
-                    'Negative': 'bg-red-100 text-red-800',
-                    'Neutral': 'bg-gray-100 text-gray-800'
-                };
-
+                // Use mood from entry, fallback to sentiment
+                const mood = entry.mood || 'neutral';
+                const emoji = moodEmoji[mood] || '😐';
+                const color = moodColors[mood] || 'bg-gray-100';
                 return `
-                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
-                        <div class="flex items-start justify-between mb-2">
-                            <div class="text-sm text-gray-500">${entry.date} at ${entry.time}</div>
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${moodColors[entry.mood]}">
-                                ${entry.mood}
-                            </span>
-                        </div>
-                        <p class="text-gray-800 mb-3">${entry.entry}</p>
-                        <div class="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                            <span class="font-medium">💡</span> ${entry.suggestion}
-                        </div>
+                    <div class="${color} rounded-2xl shadow-md p-6 flex flex-col items-center justify-between min-h-[180px]">
+                        <div class="text-5xl mb-2">${emoji}</div>
+                        <div class="text-xs text-gray-500 mb-1">${entry.date}</div>
+                        <div class="font-semibold text-gray-800 text-center mb-2 line-clamp-3">${entry.entry.length > 60 ? entry.entry.slice(0, 60) + '…' : entry.entry}</div>
+                        <div class="text-xs text-blue-600 mt-auto">${entry.suggestion ? '💡 ' + entry.suggestion : ''}</div>
                     </div>
                 `;
             }).join('');
@@ -328,33 +733,18 @@
         }
 
         function loadEntries() {
-            fetch('http://localhost:5000/api/journal')
+            fetch('http://localhost:5000/api/journal', {
+                credentials: 'include'
+            })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.entries && data.entries.length > 0) {
-                        data.entries.forEach(e => {
-                            const li = document.createElement('li');
-                            // Special styling for crisis entries
-                            if (e.mood === 'Crisis') {
-                                li.className = "mb-4 p-3 bg-red-50 rounded border border-red-300";
-                                li.innerHTML = `
-                                    <div><b>${e.date}</b>: ${e.entry}</div>
-                                    <div class="text-red-700 font-bold">⚠️ Crisis - ${e.mood}</div>
-                                    <div class="text-red-600 font-semibold">${e.suggestion}</div>
-                                `;
-                            } else {
-                                li.className = "mb-4 p-3 bg-gray-50 rounded border";
-                                li.innerHTML = `
-                                    <div><b>${e.date}</b>: ${e.entry}</div>
-                                    <div>Mood: <b>${e.mood}</b></div>
-                                    <div>Suggestion: ${e.suggestion}</div>
-                                `;
-                            }
-                            entriesList.appendChild(li);
-                        });
+                    if (data.success && data.entries && data.entries.length > 0) {
+                        entries = data.entries;
+                        displayEntries();
                         drawChart(data.entries);
                     } else {
-                        entriesList.innerHTML = '<li class="text-gray-500">No entries yet. Start by adding your first journal entry!</li>';
+                        entries = [];
+                        displayEntries();
                     }
                 })
                 .catch(error => {
