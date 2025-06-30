@@ -658,8 +658,10 @@
                 .then(data => {
                     if (data.success && data.entries && data.entries.length > 0) {
                         entries = data.entries;
+                        // Sort entries by date (ascending)
+                        entries.sort((a, b) => new Date(a.date) - new Date(b.date));
                         displayEntries();
-                        drawChart(data.entries);
+                        drawChart(entries);
                     } else {
                         entries = [];
                         displayEntries();
