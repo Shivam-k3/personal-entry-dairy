@@ -2,22 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/register.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/login.py",
-      "use": "@vercel/python"
+      "src": "static/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/auth/register",
-      "dest": "/api/register.py"
-    },
-    {
-      "src": "/api/auth/login",
-      "dest": "/api/login.py"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
       "src": "/(.*)",
