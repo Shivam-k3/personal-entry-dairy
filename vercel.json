@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "functions": {
+    "api/register.py": {
+      "runtime": "python3.9"
+    },
+    "api/login.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/auth/register",
+      "dest": "/api/register.py"
+    },
+    {
+      "src": "/api/auth/login",
+      "dest": "/api/login.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/static/$1"
+    }
+  ]
+} 
