@@ -1,13 +1,15 @@
 {
   "version": 2,
-  "functions": {
-    "api/register.py": {
-      "runtime": "python3.9"
+  "builds": [
+    {
+      "src": "api/register.py",
+      "use": "@vercel/python"
     },
-    "api/login.py": {
-      "runtime": "python3.9"
+    {
+      "src": "api/login.py",
+      "use": "@vercel/python"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/auth/register",
